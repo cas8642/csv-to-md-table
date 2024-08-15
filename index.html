@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSV to Markdown Table Converter</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      textarea {
+        width: 100%;
+        height: 200px;
+        margin-bottom: 10px;
+      }
+      .checkbox-container {
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="csvInput" placeholder="Paste your CSV content here"></textarea>
+    <div class="checkbox-container">
+      <input type="checkbox" id="excludeEmptyColumns" checked />
+      <label for="excludeEmptyColumns">Exclude column headers if all value rows are empty or whitespace</label>
+    </div>
+    <textarea id="output" readonly></textarea>
+
+    <script>
+      function convertToMarkdown() {
+        const csvInput = document.getElementById("csvInput").value.trim();
+        const excludeEmptyColumns = document.getElementById("excludeEmptyColumns").checked;
+        const rows = csvInput.split("\n").map((row) => row.split(",").map((cell) => cell.trim().replace(/^"|"$/g, "")));
+
+        if (rows.length < 2) {
+          document.getElementById("output").value =
+            "Please provide valid CSV content with at least a header row and one data row.";
+          return;
+        }
+
+        const header = rows[0];
+        const dataRows = rows.slice(1);
+
+        // Determine which columns to include
+        const columnsToInclude = header.map((_, columnIndex) => {
+          if (!excludeEmptyColumns) return true;
+          return dataRows.some((row) => row[columnIndex].trim() !== "");
+        });
+
+        // Filter header and data rows
+        const filteredHeader = header.filter((_, index) => columnsToInclude[index]);
+        const filteredDataRows = dataRows.map((row) => row.filter((_, index) => columnsToInclude[index]));
+
+        const markdownHeader = "| " + filteredHeader.join(" | ") + " |";
+        const separator = "| " + filteredHeader.map(() => "---").join(" | ") + " |";
+
+        const markdownDataRows = filteredDataRows.map((row) => "| " + row.join(" | ") + " |");
+
+        const markdownTable = [markdownHeader, separator, ...markdownDataRows].join("\n");
+
+        document.getElementById("output").value = markdownTable;
+      }
+
+      document.getElementById("csvInput").addEventListener("input", convertToMarkdown);
+      document.getElementById("excludeEmptyColumns").addEventListener("change", convertToMarkdown);
+    </script>
+  </body>
+</html>
